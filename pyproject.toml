@@ -1,0 +1,8 @@
+[project]
+name = "music-library"
+version = "0.0.0"
+description = "Self-hosted music library pipeline feeding Plex"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "beets[chroma,embedart,fetchart,plexupdate,web]==2.14.1",
+]

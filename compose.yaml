@@ -1,0 +1,31 @@
+name: music-library
+
+services:
+  metube:
+    image: ghcr.io/alexta69/metube:2026.10.27
+    restart: unless-stopped
+    ports:
+      - "${METUBE_PORT}:8081"
+    environment:
+      PUID: "${PUID}"
+      PGID: "${PGID}"
+      DOWNLOAD_DIR: /downloads
+      AUDIO_DOWNLOAD_DIR: /downloads
+      STATE_DIR: /state
+      TEMP_DIR: /state/tmp
+      OUTPUT_TEMPLATE: "%(title)s [%(id)s].%(ext)s"
+      YTDL_OPTIONS: '{"writeinfojson": true, "download_archive": "/state/archive.txt"}'
+    volumes:
+      - ${INBOX_DIR}:/downloads
+      - ${DATA_DIR}/metube:/state
+
+  music:
+    image: ghcr.io/rn-ax/music-library:${IMAGE_TAG}
+    restart: unless-stopped
+    user: "${PUID}:${PGID}"
+    ports:
+      - "${BEETS_PORT}:8337"
+    volumes:
+      - ${MUSIC_DIR}:/music
+      - ${INBOX_DIR}:/inbox
+      - ${DATA_DIR}/beets:/data

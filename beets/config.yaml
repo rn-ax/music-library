@@ -1,0 +1,22 @@
+directory: /music
+library: /data/library.db
+statefile: /data/state.pickle
+
+plugins: web edit info duplicates fromfilename fetchart embedart convert chroma
+
+# An import changes nothing on disk unless the run asks for it with --move and --write.
+import:
+  copy: no
+  move: no
+  write: no
+  incremental: yes
+
+# Matches the layout the library already has: Artist/Album (Year)/Artist - Album - NN - Title.
+paths:
+  default: $albumartist/$album ($year)/$albumartist - $album - $track - $title
+  comp: Compilations/$album ($year)/$album - $track - $title
+  singleton: $artist/$title
+
+web:
+  host: 0.0.0.0
+  port: 8337

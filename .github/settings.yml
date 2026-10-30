@@ -1,0 +1,5 @@
+_extends: poppycock
+
+repository:
+  name: music-library
+  description: Self-hosted music library pipeline feeding Plex
