@@ -2,7 +2,7 @@ directory: /music
 library: /data/library.db
 statefile: /data/state.pickle
 
-plugins: web edit info duplicates fromfilename fetchart embedart convert chroma
+plugins: musicbrainz web edit info duplicates fromfilename fetchart embedart convert chroma
 
 # An import changes nothing on disk unless the run asks for it with --move and --write.
 import:

@@ -4,7 +4,7 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 
 ## Stack
 
-- The stack is a Docker Compose project with two services: `metube` (the upstream MeTube image, downloading audio into the inbox) and `music` (this repo's image, running beets and the glue code).
+- The stack is a Docker Compose project with three services: `metube` (the upstream MeTube image, downloading audio into the inbox), `music` (this repo's image, running beets and the glue code) and `beets-flask` (the upstream beets-flask web UI, for reviewing and importing inbox folders).
 - The image is Python 3.14 managed with `uv`, with `ffmpeg` and `fpcalc` (chromaprint) installed alongside beets.
 - Dependencies are pinned in `pyproject.toml` and locked in `uv.lock`. Renovate keeps the image tags, base images and Python packages current.
 
@@ -25,7 +25,8 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 
 ## Inbox and library
 
-- MeTube writes into the inbox, and beets moves finished files from the inbox into the library. Both sit on the same filesystem, so a move is a rename and a reader never sees a half-written file.
+- MeTube writes into the inbox, one subfolder per download (`OUTPUT_TEMPLATE` is `%(id)s/%(title)s.%(ext)s`), and a subfolder is the unit that gets imported.
+- The `music` service moves finished files from the inbox into the library with `beet import --move`. Both sit on the same filesystem, so a move is a rename and a reader never sees a half-written file.
 - The library holds only finished files. Plex scans the library, so a file reaches it only after its tags are final and its path is the one beets computed from them.
 - Plex tracks items by path. Moving or renaming a file after Plex has scanned it makes Plex see a new item and lose its play counts, ratings and playlist membership.
 
@@ -35,7 +36,19 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - The beets database and state file live in the `music` service's `/data` volume.
 - The config sets `copy`, `move` and `write` to `no`, so an import changes nothing on disk until the run passes `--move` and `--write`.
 - Path templates reproduce the library's existing layout: `Artist/Album (Year)/Artist - Album - NN - Title`, with singles directly under the artist folder.
+- The `musicbrainz` plugin is listed explicitly, because beets only matches against MusicBrainz when it is enabled.
 - `beet import --set FIELD=VALUE` sets a field on every imported item, which is how provenance can be stamped during an import.
+
+## beets-flask
+
+- The `beets-flask` image is the upstream image pinned to a release. It bundles its own beets and keeps its own database in `${DATA_DIR}/beets-flask`, separate from the `music` service's database.
+- It reads two files from its `/config` volume: `beets/config.yaml` (the beets configuration) and `beets-flask/config.yaml` (inboxes and terminal settings). The container generates defaults when they are missing, and a restart applies a change.
+- `beets-flask/beets.yaml` and `beets-flask/config.yaml` in this repo are the seeds for those two files, copied into place before the first start.
+- The container sees the library at `/music` and the inbox at `/music/_inbox`.
+- Its inbox in `preview` mode fetches candidate matches and waits for a person to review them. `auto` mode imports good matches without review.
+- Its config schema accepts only `import.copy: yes` with `import.move: no`, so it copies from the inbox into the library and leaves the original in the inbox.
+- The `chroma` plugin is incompatible with it, so its beets configuration omits `chroma`.
+- Both beets installations write to the same library. Run one import tool at a time against the same inbox.
 
 ## Audio formats
 

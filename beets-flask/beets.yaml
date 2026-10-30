@@ -1,0 +1,17 @@
+plugins: [musicbrainz, info, fetchart, embedart, convert, fromfilename, duplicates, edit, missing]
+
+directory: /music
+
+# Importing from the GUI is an explicit review step, so it writes tags. beets-flask only accepts copy: yes with move: no.
+import:
+  copy: yes
+  move: no
+  write: yes
+  quiet_fallback: skip
+  duplicate_action: ask
+
+# Matches the layout the library already has: Artist/Album (Year)/Artist - Album - NN - Title.
+paths:
+  default: $albumartist/$album ($year)/$albumartist - $album - $track - $title
+  comp: Compilations/$album ($year)/$album - $track - $title
+  singleton: $artist/$title

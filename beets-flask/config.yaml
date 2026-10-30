@@ -1,0 +1,9 @@
+gui:
+  terminal:
+    start_path: /music/_inbox
+  inbox:
+    folders:
+      downloads:
+        name: Downloads
+        path: /music/_inbox
+        autotag: preview

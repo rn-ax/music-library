@@ -13,7 +13,7 @@ services:
       AUDIO_DOWNLOAD_DIR: /downloads
       STATE_DIR: /state
       TEMP_DIR: /state/tmp
-      OUTPUT_TEMPLATE: "%(title)s [%(id)s].%(ext)s"
+      OUTPUT_TEMPLATE: "%(id)s/%(title)s.%(ext)s"
       YTDL_OPTIONS: '{"writeinfojson": true, "download_archive": "/state/archive.txt"}'
     volumes:
       - ${INBOX_DIR}:/downloads
@@ -29,3 +29,16 @@ services:
       - ${MUSIC_DIR}:/music
       - ${INBOX_DIR}:/inbox
       - ${DATA_DIR}/beets:/data
+
+  beets-flask:
+    image: pspitzner/beets-flask:v2.0.0-rc5
+    restart: unless-stopped
+    ports:
+      - "${BEETS_FLASK_PORT}:5001"
+    environment:
+      TZ: "${TZ}"
+      USER_ID: "${PUID}"
+      GROUP_ID: "${PGID}"
+    volumes:
+      - ${DATA_DIR}/beets-flask:/config
+      - ${MUSIC_DIR}:/music
