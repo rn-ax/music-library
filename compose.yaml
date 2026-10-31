@@ -20,7 +20,7 @@ services:
       - ${DATA_DIR}/metube:/state
 
   music:
-    image: ghcr.io/rn-ax/music-library:${IMAGE_TAG}
+    image: ghcr.io/rn-ax/music-library:latest
     restart: unless-stopped
     user: "${PUID}:${PGID}"
     ports:

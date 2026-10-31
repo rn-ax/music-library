@@ -22,7 +22,7 @@ Downloads from [MeTube](https://github.com/alexta69/metube) land in an inbox. [b
 
 ## Rendering the stack
 
-`IMAGE_TAG=<version> docker compose --env-file env/truenas.env config` prints the fully resolved compose file for the TrueNAS deployment.
+`docker compose --env-file env/truenas.env config` prints the fully resolved compose file for the TrueNAS deployment.
 
 ## Setting up a deployment
 

@@ -54,4 +54,6 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: APP_VERSION=${{ steps.version.outputs.value }}
-          tags: ghcr.io/rn-ax/music-library:${{ steps.version.outputs.value }}
+          tags: |
+            ghcr.io/rn-ax/music-library:latest
+            ghcr.io/rn-ax/music-library:${{ steps.version.outputs.value }}
