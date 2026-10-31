@@ -34,9 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Compute CalVer version
-        id: version
-        run: echo "value=$(date -u +%Y.%m.%d).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      - id: version
+        uses: rn-ax/poppycock/.github/actions/calver@main
 
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
         with:
@@ -53,7 +52,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          build-args: APP_VERSION=${{ steps.version.outputs.value }}
+          build-args: APP_VERSION=${{ steps.version.outputs.version }}
           tags: |
             ghcr.io/rn-ax/music-library:latest
-            ghcr.io/rn-ax/music-library:${{ steps.version.outputs.value }}
+            ghcr.io/rn-ax/music-library:${{ steps.version.outputs.version }}
