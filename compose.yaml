@@ -42,3 +42,4 @@ services:
     volumes:
       - ${DATA_DIR}/beets-flask:/config
       - ${MUSIC_DIR}:/music
+      - ${INBOX_DIR}:/inbox

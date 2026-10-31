@@ -12,7 +12,6 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 
 - `compose.yaml` holds no host-specific values. Every host path, port and user id is a `${VARIABLE}` resolved from `env/<name>.env`.
 - One env file describes one deployment. `docker compose --env-file env/<name>.env config` renders the stack with everything resolved, and that rendered YAML is what a TrueNAS Custom App receives as its compose config.
-- An env file can build one variable from another (`INBOX_DIR=${MUSIC_DIR}/_inbox`).
 - `mise run check` renders the compose file against every env file, so a missing variable fails the check.
 
 ## TrueNAS Custom App
@@ -26,7 +25,10 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 ## Inbox and library
 
 - MeTube writes into the inbox, one subfolder per download (`OUTPUT_TEMPLATE` is `%(id)s/%(title)s.%(ext)s`), and a subfolder is the unit that gets imported.
-- The `music` service moves finished files from the inbox into the library with `beet import --move`. Both sit on the same filesystem, so a move is a rename and a reader never sees a half-written file.
+- The `music` service moves finished files from the inbox into the library with `beet import --move`.
+- The inbox is a directory of its own, `metube` inside the Downloads share, which keeps this stack's downloads apart from what other apps put there.
+- The inbox and the library are on different datasets, so putting a file into the library is a copy followed by a delete, and the library can briefly hold a partly written file.
+- Plex's automatic scanning of the Music library is off, and the pipeline asks Plex to scan after an import completes, so Plex never reads a partly written file.
 - The library holds only finished files. Plex scans the library, so a file reaches it only after its tags are final and its path is the one beets computed from them.
 - Plex tracks items by path. Moving or renaming a file after Plex has scanned it makes Plex see a new item and lose its play counts, ratings and playlist membership.
 
@@ -44,7 +46,7 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - The `beets-flask` image is the upstream image pinned to a release. It bundles its own beets and keeps its own database in `${DATA_DIR}/beets-flask`, separate from the `music` service's database.
 - It reads two files from its `/config` volume: `beets/config.yaml` (the beets configuration) and `beets-flask/config.yaml` (inboxes and terminal settings). The container generates defaults when they are missing, and a restart applies a change.
 - `beets-flask/beets.yaml` and `beets-flask/config.yaml` in this repo are the seeds for those two files, copied into place before the first start.
-- The container sees the library at `/music` and the inbox at `/music/_inbox`.
+- The container sees the library at `/music` and the inbox at `/inbox`.
 - Its inbox in `preview` mode fetches candidate matches and waits for a person to review them. `auto` mode imports good matches without review.
 - Its config schema accepts only `import.copy: yes` with `import.move: no`, so it copies from the inbox into the library and leaves the original in the inbox.
 - The `chroma` plugin is incompatible with it, so its beets configuration omits `chroma`.

@@ -26,6 +26,6 @@ Downloads from [MeTube](https://github.com/alexta69/metube) land in an inbox. [b
 
 ## Setting up a deployment
 
-1. Create the host directories named in the env file (`MUSIC_DIR`, and `DATA_DIR` with `metube`, `beets`, `beets-flask/beets` and `beets-flask/beets-flask` inside it), owned by `PUID:PGID`.
+1. Create the host directories named in the env file (`MUSIC_DIR`, `INBOX_DIR`, and `DATA_DIR` with `metube`, `beets`, `beets-flask/beets` and `beets-flask/beets-flask` inside it), owned by `PUID:PGID`.
 2. Copy `beets-flask/beets.yaml` to `$DATA_DIR/beets-flask/beets/config.yaml` and `beets-flask/config.yaml` to `$DATA_DIR/beets-flask/beets-flask/config.yaml`.
 3. Render the compose file with the env file and install it as the app's compose config.
