@@ -35,7 +35,7 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - `beets/config.yaml` is baked into the image at `/etc/beets/config.yaml`, and every `beet` call passes it with `-c`. Changing beets configuration means building a new image.
 - The beets database and state file live in the `music` service's `/data` volume.
 - The config sets `copy`, `move` and `write` to `no`, so an import changes nothing on disk until the run passes `--move` and `--write`.
-- Path templates reproduce the library's existing layout: `Artist/Album (Year)/Artist - Album - NN - Title`, with singles directly under the artist folder.
+- Path templates produce `Artist/Album (Year)/NN Title`, with a disc prefix on multi-disc albums, `Compilations/Album (Year)/NN Artist - Title` for compilations, and singles directly under the artist folder.
 - The `musicbrainz` plugin is listed explicitly, because beets only matches against MusicBrainz when it is enabled.
 - `beet import --set FIELD=VALUE` sets a field on every imported item, which is how provenance can be stamped during an import.
 

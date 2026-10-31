@@ -2,7 +2,7 @@ directory: /music
 library: /data/library.db
 statefile: /data/state.pickle
 
-plugins: musicbrainz web edit info duplicates fromfilename fetchart embedart convert chroma
+plugins: inline musicbrainz web edit info duplicates fromfilename fetchart embedart convert chroma
 
 # An import changes nothing on disk unless the run asks for it with --move and --write.
 import:
@@ -11,10 +11,13 @@ import:
   write: no
   incremental: yes
 
-# Matches the layout the library already has: Artist/Album (Year)/Artist - Album - NN - Title.
+# Artist/Album (Year)/NN Title, with a disc prefix on multi-disc albums and singles directly under the artist.
+item_fields:
+  multidisc: 1 if disctotal > 1 else 0
+
 paths:
-  default: $albumartist/$album ($year)/$albumartist - $album - $track - $title
-  comp: Compilations/$album ($year)/$album - $track - $title
+  default: $albumartist/$album ($year)/%if{$multidisc,$disc-}$track $title
+  comp: Compilations/$album ($year)/%if{$multidisc,$disc-}$track $artist - $title
   singleton: $artist/$title
 
 web:
