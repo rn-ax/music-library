@@ -1,0 +1,45 @@
+name: music-library
+
+services:
+  metube:
+    image: ghcr.io/alexta69/metube:2026.10.27
+    restart: unless-stopped
+    ports:
+      - "30881:8081"
+    environment:
+      PUID: "568"
+      PGID: "568"
+      DOWNLOAD_DIR: /downloads
+      AUDIO_DOWNLOAD_DIR: /downloads
+      STATE_DIR: /state
+      TEMP_DIR: /state/tmp
+      OUTPUT_TEMPLATE: "%(id)s/%(title)s.%(ext)s"
+      YTDL_OPTIONS: '{"writeinfojson": true, "download_archive": "/state/archive.txt"}'
+    volumes:
+      - /mnt/Storage/Downloads/metube:/downloads
+      - /mnt/Storage/Configuration/music-library/metube:/state
+
+  music:
+    image: ghcr.io/rn-ax/music-library:latest
+    restart: unless-stopped
+    user: "568:568"
+    ports:
+      - "30837:8337"
+    volumes:
+      - /mnt/Storage/Music:/music
+      - /mnt/Storage/Downloads/metube:/inbox
+      - /mnt/Storage/Configuration/music-library/beets:/data
+
+  beets-flask:
+    image: pspitzner/beets-flask:v2.0.0-rc5
+    restart: unless-stopped
+    ports:
+      - "30501:5001"
+    environment:
+      TZ: Europe/Helsinki
+      USER_ID: "568"
+      GROUP_ID: "568"
+    volumes:
+      - /mnt/Storage/Configuration/music-library/beets-flask:/config
+      - /mnt/Storage/Music:/music
+      - /mnt/Storage/Downloads/metube:/inbox

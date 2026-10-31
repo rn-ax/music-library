@@ -1,0 +1,25 @@
+directory: /music
+library: /data/library.db
+statefile: /data/state.pickle
+
+plugins: inline musicbrainz web edit info duplicates fromfilename fetchart embedart convert chroma
+
+# An import changes nothing on disk unless the run asks for it with --move and --write.
+import:
+  copy: no
+  move: no
+  write: no
+  incremental: yes
+
+# Artist/Album (Year)/NN Title, with a disc prefix on multi-disc albums and singles directly under the artist.
+item_fields:
+  multidisc: 1 if disctotal > 1 else 0
+
+paths:
+  default: $albumartist/$album ($year)/%if{$multidisc,$disc-}$track $title
+  comp: Compilations/$album ($year)/%if{$multidisc,$disc-}$track $artist - $title
+  singleton: $artist/$title
+
+web:
+  host: 0.0.0.0
+  port: 8337
