@@ -10,8 +10,9 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 
 ## Compose and env files
 
-- `compose.yaml` holds no host-specific values. Every host path, port and user id is a `${VARIABLE}` resolved from `env/<name>.env`.
-- One env file describes one deployment. `docker compose --env-file env/<name>.env config` renders the stack with everything resolved, and that rendered YAML is what a TrueNAS Custom App receives as its compose config.
+- `compose.yaml` holds no host-specific values. Every host path, port and user id is a `${VARIABLE}` resolved from `env/truenas.env`, except the image tag.
+- The image tag is the CalVer version CI built, passed to the render as the `IMAGE_TAG` environment variable.
+- One env file describes one deployment. `IMAGE_TAG=<version> docker compose --env-file env/truenas.env config` renders the stack with everything resolved, and that rendered YAML is what a TrueNAS Custom App receives as its compose config.
 - `mise run check` renders the compose file against every env file, so a missing variable fails the check.
 
 ## TrueNAS Custom App

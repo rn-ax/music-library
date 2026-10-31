@@ -7,7 +7,7 @@ Downloads from [MeTube](https://github.com/alexta69/metube) land in an inbox. [b
 ## Layout
 
 - `compose.yaml` is the source of truth for the deployed stack, parameterized by an env file.
-- `env/<name>.env` holds the host paths, ports and user ids for one deployment of the stack.
+- `env/truenas.env` holds the host paths, ports and user ids for the TrueNAS deployment of the stack.
 - `Dockerfile` and `pyproject.toml` build the image that runs beets and the glue code around it.
 - `beets/config.yaml` is the beets configuration baked into that image.
 - `beets-flask/` holds the seed configuration for the beets-flask service.
@@ -22,7 +22,7 @@ Downloads from [MeTube](https://github.com/alexta69/metube) land in an inbox. [b
 
 ## Rendering the stack
 
-`docker compose --env-file env/<name>.env config` prints the fully resolved compose file for a deployment.
+`IMAGE_TAG=<version> docker compose --env-file env/truenas.env config` prints the fully resolved compose file for the TrueNAS deployment.
 
 ## Setting up a deployment
 

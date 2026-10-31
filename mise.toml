@@ -6,6 +6,6 @@ uv = "0.13.6"
 description = "Validate the compose file renders for every env file"
 run = '''
 for env in env/*.env; do
-  docker compose --env-file "$env" config --quiet
+  IMAGE_TAG=check docker compose --env-file "$env" config --quiet
 done
 '''
