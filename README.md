@@ -6,8 +6,7 @@ Downloads from [MeTube](https://github.com/alexta69/metube) land in an inbox. [b
 
 ## Layout
 
-- `compose.yaml` is the source of truth for the deployed stack, parameterized by an env file.
-- `env/truenas.env` holds the host paths, ports and user ids for the TrueNAS deployment of the stack.
+- `compose.yaml` is the source of truth for the deployed stack.
 - `Dockerfile` and `pyproject.toml` build the image that runs beets and the glue code around it.
 - `beets/config.yaml` is the beets configuration baked into that image.
 - `beets-flask/` holds the seed configuration for the beets-flask service.
@@ -16,16 +15,12 @@ Downloads from [MeTube](https://github.com/alexta69/metube) land in an inbox. [b
 
 ## Checks
 
-`mise run check` renders the compose file against every env file.
+`mise run check` validates the compose file.
 
 `docker build --platform linux/amd64 .` builds the image.
 
-## Rendering the stack
-
-`docker compose --env-file env/truenas.env config` prints the fully resolved compose file for the TrueNAS deployment.
-
 ## Setting up a deployment
 
-1. Create the host directories named in the env file (`MUSIC_DIR`, `INBOX_DIR`, and `DATA_DIR` with `metube`, `beets`, `beets-flask/beets` and `beets-flask/beets-flask` inside it), owned by `PUID:PGID`.
-2. Copy `beets-flask/beets.yaml` to `$DATA_DIR/beets-flask/beets/config.yaml` and `beets-flask/config.yaml` to `$DATA_DIR/beets-flask/beets-flask/config.yaml`.
-3. Render the compose file with the env file and install it as the app's compose config.
+1. Create the host directories the compose file mounts that do not exist yet (`/mnt/Storage/Downloads/metube`, and `/mnt/Storage/Configuration/music-library` with `metube`, `beets`, `beets-flask/beets` and `beets-flask/beets-flask` inside it), owned by `apps:apps`.
+2. Copy `beets-flask/beets.yaml` to `/mnt/Storage/Configuration/music-library/beets-flask/beets/config.yaml` and `beets-flask/config.yaml` to `/mnt/Storage/Configuration/music-library/beets-flask/beets-flask/config.yaml`.
+3. Install `compose.yaml` as the app's compose config.

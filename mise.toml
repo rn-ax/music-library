@@ -3,9 +3,5 @@ python = "3.14"
 uv = "0.13.6"
 
 [tasks.check]
-description = "Validate the compose file renders for every env file"
-run = '''
-for env in env/*.env; do
-  docker compose --env-file "$env" config --quiet
-done
-'''
+description = "Validate the compose file"
+run = "docker compose config --quiet"

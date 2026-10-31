@@ -5,10 +5,10 @@ services:
     image: ghcr.io/alexta69/metube:2026.10.27
     restart: unless-stopped
     ports:
-      - "${METUBE_PORT}:8081"
+      - "30881:8081"
     environment:
-      PUID: "${PUID}"
-      PGID: "${PGID}"
+      PUID: "568"
+      PGID: "568"
       DOWNLOAD_DIR: /downloads
       AUDIO_DOWNLOAD_DIR: /downloads
       STATE_DIR: /state
@@ -16,30 +16,30 @@ services:
       OUTPUT_TEMPLATE: "%(id)s/%(title)s.%(ext)s"
       YTDL_OPTIONS: '{"writeinfojson": true, "download_archive": "/state/archive.txt"}'
     volumes:
-      - ${INBOX_DIR}:/downloads
-      - ${DATA_DIR}/metube:/state
+      - /mnt/Storage/Downloads/metube:/downloads
+      - /mnt/Storage/Configuration/music-library/metube:/state
 
   music:
     image: ghcr.io/rn-ax/music-library:latest
     restart: unless-stopped
-    user: "${PUID}:${PGID}"
+    user: "568:568"
     ports:
-      - "${BEETS_PORT}:8337"
+      - "30837:8337"
     volumes:
-      - ${MUSIC_DIR}:/music
-      - ${INBOX_DIR}:/inbox
-      - ${DATA_DIR}/beets:/data
+      - /mnt/Storage/Music:/music
+      - /mnt/Storage/Downloads/metube:/inbox
+      - /mnt/Storage/Configuration/music-library/beets:/data
 
   beets-flask:
     image: pspitzner/beets-flask:v2.0.0-rc5
     restart: unless-stopped
     ports:
-      - "${BEETS_FLASK_PORT}:5001"
+      - "30501:5001"
     environment:
-      TZ: "${TZ}"
-      USER_ID: "${PUID}"
-      GROUP_ID: "${PGID}"
+      TZ: Europe/Helsinki
+      USER_ID: "568"
+      GROUP_ID: "568"
     volumes:
-      - ${DATA_DIR}/beets-flask:/config
-      - ${MUSIC_DIR}:/music
-      - ${INBOX_DIR}:/inbox
+      - /mnt/Storage/Configuration/music-library/beets-flask:/config
+      - /mnt/Storage/Music:/music
+      - /mnt/Storage/Downloads/metube:/inbox

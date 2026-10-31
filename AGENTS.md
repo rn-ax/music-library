@@ -8,19 +8,18 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - The image is Python 3.14 managed with `uv`, with `ffmpeg` and `fpcalc` (chromaprint) installed alongside beets.
 - Dependencies are pinned in `pyproject.toml` and locked in `uv.lock`. Renovate keeps the image tags, base images and Python packages current.
 
-## Compose and env files
+## Compose file
 
-- `compose.yaml` holds no host-specific values. Every host path, port and user id is a `${VARIABLE}` resolved from `env/truenas.env`.
-- One env file describes one deployment. `docker compose --env-file env/truenas.env config` renders the stack with everything resolved, and that rendered YAML is what a TrueNAS Custom App receives as its compose config.
-- `mise run check` renders the compose file against every env file, so a missing variable fails the check.
+- `compose.yaml` is the whole deployment: its host paths, ports and user ids are written into it directly, and the file is sent to TrueNAS unchanged.
+- `mise run check` validates the compose file.
 
 ## TrueNAS Custom App
 
-- The deployed app is a TrueNAS Custom App whose config is the rendered compose YAML: `app.create` with `custom_app: true` and `custom_compose_config_string` installs it, and `app.update` with a new `custom_compose_config_string` changes it.
+- The deployed app is a TrueNAS Custom App whose config is `compose.yaml`: `app.create` with `custom_app: true` and `custom_compose_config_string` installs it, and `app.update` with a new `custom_compose_config_string` changes it.
 - `app.update` leaves running containers as they are, so it is followed by `app.redeploy` to apply the new config.
 - The `music` service runs the `latest` tag, so a deploy first calls `app.pull_images` to fetch the newest build and then `app.redeploy`.
 - A redeploy restarts every container in the app.
-- Containers run as the `apps` user (568:568). Every host path in an env file is a ZFS dataset or a directory in one, owned by `apps:apps` and created before the app starts, because a bind mount of a missing path is created by Docker as root.
+- Containers run as the `apps` user (568:568). Every host path in the compose file is a ZFS dataset or a directory in one, owned by `apps:apps` and created before the app starts, because a bind mount of a missing path is created by Docker as root.
 - The TrueNAS host is x86_64. Images are built for `linux/amd64`.
 
 ## Inbox and library
