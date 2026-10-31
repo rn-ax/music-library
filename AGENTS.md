@@ -8,6 +8,13 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - The image is Python 3.14 managed with `uv`, with `ffmpeg` and `fpcalc` (chromaprint) installed alongside beets.
 - Dependencies are pinned in `pyproject.toml` and locked in `uv.lock`. Renovate keeps the image tags, base images and Python packages current.
 
+## Component boundaries
+
+- Each component is operated through its own documented interface: MeTube through its environment and `YTDL_OPTIONS`, beets through its YAML configuration, CLI and plugins, beets-flask through its two configuration files, and Plex through its API.
+- A component's private store is written only by that component. Other components read files or call its interface.
+- Components meet at the filesystem (the inbox and the library) and at the tags in the files, and they share no databases.
+- Translation between one component's vocabulary and another's lives in this repo, in one place per seam, so a change in a component's behaviour changes one place. `DOMAIN.md` names the contexts and the seams.
+
 ## Compose file
 
 - `compose.yaml` is the whole deployment: its host paths, ports and user ids are written into it directly, and the file is sent to TrueNAS unchanged.
