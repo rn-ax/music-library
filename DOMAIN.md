@@ -6,6 +6,12 @@ Everything that matters about a track is stored in the file. Title, artist, albu
 
 New audio arrives in an inbox, outside the library. Most of it comes from YouTube, where titles, uploaders and thumbnails are not a reliable source of tags, so a person confirms or enters the metadata before a file is filed. Once its tags are final, the file is moved into the library at the path its tags dictate: `Artist/Album (Year)/NN Title`, with a single directly under its artist.
 
+A track is part of an album, part of a compilation, or stands alone as a single. An album track is filed under its album artist and album, a compilation track under `Compilations` with its own artist in the file name, and a single directly under its artist with no album folder. beets calls a single a singleton. A single has no album to tell versions apart, so a live version, remix or cover says so in its title, as in `Kryptonite (Live @ The Song)`.
+
+Automatic matching against MusicBrainz suggests tags, and a person has the final say. Downloads of covers, live recordings and remixes often have no match, so typing the tags by hand is a normal path and not a failure.
+
+A video is downloaded once. The downloader keeps an archive of the videos it has fetched, so asking for the same one again does nothing.
+
 The library holds two formats, AAC and ALAC, both in `.m4a`. AAC is the source's own stream taken from a lossy source without re-encoding, and ALAC is what a lossless source becomes. Audio in any other format is converted to one of them before it enters the library. The format is read from the stream and never from the file name, because the two share an extension.
 
 Plex reads the library and nothing else. A file appears in the library only when it is finished, because Plex identifies items by path: a file moved or renamed after Plex has scanned it appears as a new item and loses its play counts, ratings and playlist membership. Fixing a tag in place keeps the path and is safe; a fix that changes the path is a deliberate rename.

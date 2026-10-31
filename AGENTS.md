@@ -20,6 +20,8 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - The `music` service runs the `latest` tag, so a deploy first calls `app.pull_images` to fetch the newest build and then `app.redeploy`.
 - A redeploy restarts every container in the app.
 - Containers run as the `apps` user (568:568). Every host path in the compose file is a ZFS dataset or a directory in one, owned by `apps:apps` and created before the app starts, because a bind mount of a missing path is created by Docker as root.
+- Library files and directories are owned by `apps:apps`, or carry an ACL granting it access, so the containers running as 568 can read and write them. A file owned by another user is unreadable until its ownership is fixed.
+- The beets and beets-flask databases and MeTube's download archive live under `/mnt/Storage/Configuration/music-library`. The beets databases can be rebuilt from the files.
 - The TrueNAS host is x86_64. Images are built for `linux/amd64`.
 
 ## Inbox and library
@@ -31,6 +33,13 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - Plex's automatic scanning of the Music library is off, and the pipeline asks Plex to scan after an import completes, so Plex never reads a partly written file.
 - The library holds only finished files. Plex scans the library, so a file reaches it only after its tags are final and its path is the one beets computed from them.
 - Plex tracks items by path. Moving or renaming a file after Plex has scanned it makes Plex see a new item and lose its play counts, ratings and playlist membership.
+
+## MeTube
+
+- MeTube downloads audio into the inbox, and the audio format (`m4a`) is chosen per download in its web UI.
+- `OUTPUT_TEMPLATE` is `%(id)s/%(title)s.%(ext)s`, so each download lands in a subfolder named after its video id.
+- `YTDL_OPTIONS` writes yt-dlp's info JSON next to each download, which carries the source URL and uploader for prefilling tags, and keeps a download archive in MeTube's state directory so a video is fetched once.
+- Nothing in this stack depends on a MeTube completion event. New downloads are found by looking at the inbox.
 
 ## beets
 
@@ -52,15 +61,30 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 - The `chroma` plugin is incompatible with it, so its beets configuration omits `chroma`.
 - Both beets installations write to the same library. Run one import tool at a time against the same inbox.
 
+## Tag changes
+
+- beets is the one writer of tags in the library. A tag change goes through beets (`beet modify`, or an import), so its database and the file agree.
+- A tool that edits tags in the file directly is followed by `beet update`, which reads the files back into the beets database.
+- Beets writes tags only on an explicit import or modify, because `write` is `no` in the configuration.
+- A tag change that alters a file's path is a deliberate rename, because Plex treats the renamed file as a new item.
+- Fields that exist only in the beets database, such as flexible attributes, are invisible to tools that read the file. A value that has to survive in the file, such as the source URL, is written to a tag the file can hold.
+
 ## Audio formats
 
 - The library holds AAC and ALAC, both in `.m4a`. Both are tagged with MP4 atoms.
 - AAC comes from lossy sources as the source's own stream without re-encoding. ALAC comes from lossless sources.
 - Other audio is converted to one of the two before it enters the library.
 
+## Secrets
+
+- Secrets live in 1Password and reach containers as read-only files mounted from `/mnt/Storage/Configuration/music-library/secrets`, a directory with mode 700 whose files have mode 600, owned by `apps:apps`.
+- A secret is never an environment variable or a value in `compose.yaml`, because those are visible in `docker inspect`, in the TrueNAS app config and in the compose config sent through the API.
+- The secret files are populated from 1Password and not edited by hand on the NAS. A container reads its file at start, so rotating a secret means rewriting its file and restarting the container that reads it.
+- A credential CI needs is a repository secret.
+
 ## CI and images
 
-- CI runs on the self-hosted `contabo` runners.
+- CI runs on the self-hosted `contabo` runners, which are registered for this repository.
 - Every `uses:` reference is pinned to a full commit SHA with a trailing comment naming the tag, for example `actions/checkout@<sha> # v7.0.1`. Renovate keeps the pins current.
 - A push to `main` builds the image and pushes it to `ghcr.io/rn-ax/music-library` tagged `latest` and with a CalVer version, `YYYY.MM.DD.<run number>`, which keeps every build available by version.
 - Org-level secrets do not reach private repositories on the org's plan, so a credential CI needs is a repository secret.
