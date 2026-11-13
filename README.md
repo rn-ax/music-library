@@ -10,8 +10,8 @@ Downloads from [MeTube](https://github.com/alexta69/metube) land in an inbox. [b
 - `Dockerfile` and `pyproject.toml` build the image that runs beets and the glue code around it.
 - `beets/config.yaml` is the beets configuration baked into that image.
 - `beets-flask/` holds the seed configuration for the beets-flask service.
-- `DOMAIN.md` records what the library holds and the rules it keeps.
-- `AGENTS.md` records the technical conventions.
+- `spec/` holds the acceptance criteria and the meaning of the library's concepts, one file per functionality.
+- `AGENTS.md` records the facts and constraints specific to the repo.
 
 ## Checks
 
