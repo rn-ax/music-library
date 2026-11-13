@@ -60,6 +60,14 @@ A self-hosted music library pipeline feeding Plex. The rules it keeps are the ac
 - Its config schema accepts only `import.copy: yes` with `import.move: no`.
 - The `chroma` plugin is incompatible with it, so its beets configuration omits `chroma`.
 
+## Delivery
+
+- The delivery rules (automatic merge and deploy, a backup before every deploy, rollback) belong to the development method and are not repeated in `spec/`. These are the repo's own facts for them.
+- The stack has three SQLite databases to back up: the beets database in `/mnt/Storage/Configuration/music-library/beets`, the beets-flask beets database and the beets-flask application database, both in `/mnt/Storage/Configuration/music-library/beets-flask`. MeTube's download archive is a text file in its state directory and is copied with them.
+- A backup is made with the SQLite backup command, run in the container that owns the database, and its name ends in a UTC timestamp.
+- Rolling back runs the previous image version against the restored databases. The library files are untouched, because the databases are caches that can be rebuilt from them.
+- A deploy sends `compose.yaml` to TrueNAS through its API using a key of its own, stored as a repository secret.
+
 ## CI and images
 
 - CI runs on the self-hosted `contabo` runners, which are registered for this repository.
