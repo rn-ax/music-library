@@ -4,13 +4,8 @@ A self-hosted music library pipeline feeding Plex. The rules it keeps are the ac
 
 ## Development method
 
-- Samuel and an agent write the acceptance criteria together, and agents implement everything after them: code, tests, CI, merging, deployment and rollback.
-- No human reviews code or pull requests. A pull request merges when its CI run passes, and the criteria and CI are what keep a change safe.
-- Criteria are written and approved before the code that satisfies them.
-- Each functionality has its own file, `spec/<functionality>.md`, with a `# Context` section above a `# Criteria` list of `- AC-<n>: <rule>` lines. `spec/general.md` holds what is not large enough for a file of its own.
-- A criterion is never edited. A rule that changes is deleted and added again under a new number, and a deleted number is never reused.
-- A test checks exactly one criterion and carries its `[AC-<n>]` in its title. A criterion can have several tests.
-- The meaning of the library's concepts is written in the `# Context` of the spec files, and the invariants are criteria.
+- No human reviews code or pull requests. A pull request merges when its CI run passes.
+- The acceptance criteria are in `spec/`, and each test carries the `[AC-<n>]` it checks.
 
 ## Stack
 
@@ -62,10 +57,8 @@ A self-hosted music library pipeline feeding Plex. The rules it keeps are the ac
 
 ## Delivery
 
-- The delivery rules (automatic merge and deploy, a backup before every deploy, rollback) belong to the development method and are not repeated in `spec/`. These are the repo's own facts for them.
-- The stack has three SQLite databases to back up: the beets database in `/mnt/Storage/Configuration/music-library/beets`, the beets-flask beets database and the beets-flask application database, both in `/mnt/Storage/Configuration/music-library/beets-flask`. MeTube's download archive is a text file in its state directory and is copied with them.
-- A backup is made with the SQLite backup command, run in the container that owns the database, and its name ends in a UTC timestamp.
-- Rolling back runs the previous image version against the restored databases. The library files are untouched, because the databases are caches that can be rebuilt from them.
+- The stack has three SQLite databases to back up: the beets database in `/mnt/Storage/Configuration/music-library/beets`, and the beets-flask beets database and the beets-flask application database, both in `/mnt/Storage/Configuration/music-library/beets-flask`. MeTube's download archive is a text file in its state directory and is copied with them.
+- The databases cache what the library files say, so a rollback leaves the files as they are.
 - A deploy sends `compose.yaml` to TrueNAS through its API using a key of its own, stored as a repository secret.
 
 ## CI and images
