@@ -99,4 +99,5 @@ A self-hosted music library pipeline feeding Plex. `DOMAIN.md` describes what th
 ## Documentation
 
 - `AGENTS.md` holds technical conventions and `DOMAIN.md` holds the domain rules. Each stays within its own concern.
+- `docs/superpowers/specs/` holds design specs: intent, goals, approaches, open questions and acceptance checks. Implementation works against the latest spec, and a change of intent changes the spec first.
 - Paragraphs are written as one line each and left to the renderer to wrap.
