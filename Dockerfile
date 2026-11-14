@@ -7,8 +7,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 COPY beets/ /etc/beets/
+COPY music_library/ /app/music_library/
 ARG APP_VERSION=dev
-ENV PATH="/app/.venv/bin:$PATH" \
+ENV PYTHONPATH="/app" \
+    PATH="/app/.venv/bin:$PATH" \
     VIRTUAL_ENV="/app/.venv" \
     APP_VERSION=$APP_VERSION
 EXPOSE 8337

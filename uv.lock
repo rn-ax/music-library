@@ -410,6 +410,7 @@ version = "0.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "beets", extra = ["chroma", "embedart", "fetchart", "plexupdate", "web"] },
+    { name = "mutagen" },
 ]
 
 [package.dev-dependencies]
@@ -418,7 +419,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "beets", extras = ["chroma", "embedart", "fetchart", "plexupdate", "web"], specifier = "==2.14.1" }]
+requires-dist = [
+    { name = "beets", extras = ["chroma", "embedart", "fetchart", "plexupdate", "web"], specifier = "==2.14.1" },
+    { name = "mutagen", specifier = ">=1.48.1" },
+]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9" }]

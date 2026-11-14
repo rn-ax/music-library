@@ -5,6 +5,7 @@ description = "Self-hosted music library pipeline feeding Plex"
 requires-python = ">=3.14,<3.15"
 dependencies = [
     "beets[chroma,embedart,fetchart,plexupdate,web]==2.14.1",
+    "mutagen>=1.48.1",
 ]
 
 [dependency-groups]
