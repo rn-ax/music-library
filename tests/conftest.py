@@ -115,7 +115,10 @@ class MeTube:
 
     @staticmethod
     def run(*cmd):
-        return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise AssertionError(f"{' '.join(cmd)}\n{result.stdout}\n{result.stderr}")
+        return result.stdout
 
     def get(self, path):
         try:
