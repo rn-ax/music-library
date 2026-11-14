@@ -166,6 +166,14 @@ class MeTube:
         )
         return json.loads(urllib.request.urlopen(request, timeout=30).read())
 
+    def idle(self) -> bool:
+        """True when MeTube has nothing queued or pending."""
+        history = self.get("/history")
+        if history is None:
+            return False
+        data = json.loads(history)
+        return not data.get("queue") and not data.get("pending")
+
     def downloaded(self) -> list[str]:
         return sorted(str(p.relative_to(self.inbox)) for p in self.inbox.rglob("*") if p.is_file() and not p.name.endswith(".json") and ".part" not in p.name)
 
