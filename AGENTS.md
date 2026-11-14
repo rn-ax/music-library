@@ -14,7 +14,7 @@ A self-hosted music library pipeline feeding Plex. The rules it keeps are the ac
 - A bind mount of a missing path is created by Docker as root, so every host path exists and is owned by `apps:apps` (568:568, the user the containers run as) before the app starts.
 - The TrueNAS host is x86_64, so images are built for `linux/amd64`.
 - The inbox (`metube` in the Downloads share) and the library (the Music dataset) are different datasets, so filing a file is a copy followed by a delete.
-- The audio format (`m4a`) is chosen per download in MeTube's web UI.
+- MeTube's global `YTDL_OPTIONS` ask for `m4a` audio, which overrides the type and format chosen in its web UI.
 
 ## Delivery
 

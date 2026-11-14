@@ -2,6 +2,9 @@ import json
 import os
 import pathlib
 import subprocess
+import time
+import urllib.request
+import uuid
 
 import pytest
 
@@ -83,3 +86,82 @@ def library(tmp_path):
 def compose():
     out = subprocess.run(["docker", "compose", "config", "--format", "json"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
     return json.loads(out)
+
+
+class MeTube:
+    """The metube service from compose.yaml, run against scratch directories and a local media server."""
+
+    def __init__(self, tmp_path: pathlib.Path, service: dict):
+        self.name = f"ac-{uuid.uuid4().hex[:8]}"
+        self.inbox = tmp_path / "inbox"
+        self.state = tmp_path / "state"
+        self.media = tmp_path / "media"
+        for directory in (self.inbox, self.state, self.media):
+            directory.mkdir()
+        user = f"{os.getuid()}:{os.getgid()}"
+        self.run("docker", "network", "create", self.name)
+        self.run(
+            "docker", "run", "-d", "--rm", "--name", f"{self.name}-media", "--network", self.name, "--platform", "linux/amd64",
+            "--user", user, "-v", f"{self.media}:/srv", "--entrypoint", "python", IMAGE, "-m", "http.server", "8000", "--directory", "/srv",
+        )
+        environment = dict(service["environment"], PUID=str(os.getuid()), PGID=str(os.getgid()), ALLOW_PRIVATE_ADDRESSES="true")
+        self.run(
+            "docker", "run", "-d", "--rm", "--name", f"{self.name}-metube", "--network", self.name, "--platform", "linux/amd64",
+            "-p", "127.0.0.1::8081", "-v", f"{self.inbox}:/downloads", "-v", f"{self.state}:/state",
+            *[arg for key, value in environment.items() for arg in ("-e", f"{key}={value}")], service["image"],
+        )
+        self.port = self.run("docker", "port", f"{self.name}-metube", "8081/tcp").split(":")[-1].strip()
+        self.wait(lambda: self.get("/") is not None, "MeTube to answer")
+
+    @staticmethod
+    def run(*cmd):
+        return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+
+    def get(self, path):
+        try:
+            return urllib.request.urlopen(f"http://127.0.0.1:{self.port}{path}", timeout=5).read()
+        except OSError:
+            return None
+
+    def wait(self, condition, what, timeout=180):
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if condition():
+                return
+            time.sleep(2)
+        logs = subprocess.run(["docker", "logs", "--tail", "30", f"{self.name}-metube"], capture_output=True, text=True)
+        raise AssertionError(f"timed out waiting for {what}\n{logs.stdout}{logs.stderr}")
+
+    def make_video(self, name: str):
+        """A two second clip with a picture and an AAC soundtrack, served by the local media server."""
+        docker(
+            "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=duration=2:size=64x64:rate=5", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+            "-c:v", "libx264", "-c:a", "aac", "-shortest", f"/srv/{name}", mounts=[(self.media, "/srv")], entrypoint="ffmpeg",
+        )
+        return f"http://{self.name}-media:8000/{name}"
+
+    def add(self, url: str, **options):
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/add", data=json.dumps({"url": url, **options}).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        return json.loads(urllib.request.urlopen(request, timeout=30).read())
+
+    def downloaded(self) -> list[str]:
+        return sorted(str(p.relative_to(self.inbox)) for p in self.inbox.rglob("*") if p.is_file() and not p.name.endswith(".json") and ".part" not in p.name)
+
+    def stream_types(self, path: str) -> list[str]:
+        out = docker("-v", "error", "-show_entries", "stream=codec_type", "-of", "csv=p=0", f"/inbox/{path}", mounts=[(self.inbox, "/inbox")], entrypoint="ffprobe")
+        return out.split()
+
+    def close(self):
+        for name in (f"{self.name}-metube", f"{self.name}-media"):
+            subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+        subprocess.run(["docker", "network", "rm", self.name], capture_output=True)
+
+
+@pytest.fixture
+def metube(tmp_path, compose):
+    server = MeTube(tmp_path, compose["services"]["metube"])
+    yield server
+    server.close()
