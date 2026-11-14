@@ -5,3 +5,8 @@ uv = "0.13.6"
 [tasks.check]
 description = "Validate the compose file"
 run = "docker compose config --quiet"
+
+[tasks.test]
+description = "Run the acceptance tests against the built image"
+env = { IMAGE = "music-library:ci" }
+run = "uv run pytest tests"

@@ -32,6 +32,8 @@ jobs:
       - name: Build image
         run: docker build --platform linux/amd64 --tag music-library:ci .
 
+      - run: mise run test
+
   publish:
     needs: check
     if: github.event_name == 'push'
