@@ -21,10 +21,10 @@ The inbox is the `metube` directory of the Downloads share.
 
 # Criteria
 
-- AC-5: A URL submitted to MeTube as m4a audio produces `<inbox>/<video id>/<title>.m4a` and `<inbox>/<video id>/<title>.info.json`.
 - AC-6: The audio codec of a downloaded file is `aac` when the source stream is AAC.
 - AC-7: The audio bitrate of a downloaded AAC file equals the bitrate of the source stream.
 - AC-9: MeTube mounts only the inbox and its own state directory.
 - AC-31: A download submitted in MeTube without choosing a format is `m4a` audio.
 - AC-32: A download uses the highest-bitrate AAC stream the source offers.
 - AC-33: Submitting a URL whose audio was already downloaded creates no new file in the inbox.
+- AC-34: A URL submitted to MeTube as m4a audio produces `<inbox>/<id>/<title>.m4a` and `<inbox>/<id>/<title>.info.json`, where `<id>` is the item's id at its source.
