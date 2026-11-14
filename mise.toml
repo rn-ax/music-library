@@ -8,5 +8,5 @@ run = "docker compose config --quiet"
 
 [tasks.test]
 description = "Run the acceptance tests against the built image"
-env = { IMAGE = "music-library:ci" }
+env = { IMAGE = "music-library:ci", BEETS_FLASK_IMAGE = "music-library-beets-flask:ci" }
 run = "uv run pytest tests"

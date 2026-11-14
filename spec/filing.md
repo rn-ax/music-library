@@ -19,7 +19,7 @@ A value that has to survive in the file, such as the source URL, is written to a
 
 # Criteria
 
-- AC-10: Every folder in the inbox appears in beets-flask for review within 60 seconds of its last file change.
+- AC-35: Every folder directly inside the inbox, other than hidden ones, appears in beets-flask for review within 60 seconds of its last file change.
 - AC-11: Importing a reviewed folder writes exactly the confirmed tags into the imported file.
 - AC-12: An imported AAC or ALAC file keeps its audio stream unchanged.
 - AC-13: An imported album track is filed at `<Album Artist>/<Album> (<Year>)/<NN> <Title>.m4a`.

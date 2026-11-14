@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import time
 import urllib.request
@@ -10,6 +11,7 @@ import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 IMAGE = os.environ.get("IMAGE", "music-library:ci")
+BEETS_FLASK_IMAGE = os.environ.get("BEETS_FLASK_IMAGE", "music-library-beets-flask:ci")
 INBOX = "/mnt/Storage/Downloads/metube"
 LIBRARY = "/mnt/Storage/Music"
 
@@ -209,5 +211,76 @@ class MeTube:
 @pytest.fixture
 def metube(tmp_path, compose):
     server = MeTube(tmp_path, compose["services"]["metube"])
+    yield server
+    server.close()
+
+
+PREVIEWED = 3  # beets-flask's FolderStatus: candidates fetched, waiting for a person
+
+
+class BeetsFlask:
+    """The beets-flask service run with the repo's seed configuration against scratch directories."""
+
+    def __init__(self, tmp_path: pathlib.Path):
+        self.name = f"ac-{uuid.uuid4().hex[:8]}"
+        self.config, self.music, self.inbox = tmp_path / "config", tmp_path / "music", tmp_path / "inbox"
+        for directory in (self.config / "beets", self.config / "beets-flask", self.music, self.inbox):
+            directory.mkdir(parents=True)
+        shutil.copy(ROOT / "beets-flask" / "beets.yaml", self.config / "beets" / "config.yaml")
+        shutil.copy(ROOT / "beets-flask" / "config.yaml", self.config / "beets-flask" / "config.yaml")
+        self.inbox_mounts = [(self.inbox, "/inbox")]
+        subprocess.run(
+            [
+                "docker", "run", "-d", "--rm", "--name", self.name, "--platform", "linux/amd64", "-p", "127.0.0.1::5001",
+                "-e", "TZ=UTC", "-e", f"USER_ID={os.getuid()}", "-e", f"GROUP_ID={os.getgid()}",
+                "-v", f"{self.config}:/config", "-v", f"{self.music}:/music", "-v", f"{self.inbox}:/inbox", BEETS_FLASK_IMAGE,
+            ],
+            capture_output=True, text=True, check=True,
+        )
+        self.port = subprocess.run(["docker", "port", self.name, "5001/tcp"], capture_output=True, text=True, check=True).stdout.split(":")[-1].strip()
+        self.wait(lambda: self.get("/") is not None, "beets-flask to answer", timeout=300)
+
+    def get(self, path):
+        try:
+            return urllib.request.urlopen(f"http://127.0.0.1:{self.port}{path}", timeout=5).read()
+        except OSError:
+            return None
+
+    def wait(self, condition, what, timeout=120):
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if condition():
+                return
+            time.sleep(1)
+        logs = subprocess.run(["docker", "logs", "--tail", "30", self.name], capture_output=True, text=True)
+        raise AssertionError(f"timed out waiting for {what}\n{logs.stdout}{logs.stderr}")
+
+    def add_album(self, folder: str, title: str):
+        """A folder in the inbox holding one short tagged AAC track."""
+        (self.inbox / folder).mkdir()
+        docker(
+            "-v", "error", "-y", "-f", "lavfi", "-i", "anoisesrc=duration=2:color=pink", "-c:a", "aac",
+            "-metadata", f"title={title}", "-metadata", "artist=Test Artist", f"/inbox/{folder}/track.m4a",
+            mounts=self.inbox_mounts, entrypoint="ffmpeg",
+        )
+
+    def folders(self) -> set[str]:
+        """The folders directly inside the inbox that beets-flask lists."""
+        body = self.get("/api_v1/inbox/tree")
+        if body is None:
+            return set()
+        return {child["full_path"] for root in json.loads(body) for child in root.get("children", []) if child["type"] == "directory"}
+
+    def statuses(self) -> dict[str, int]:
+        body = self.get("/api_v1/session/status")
+        return {} if body is None else {item["path"]: item["status"] for item in json.loads(body)}
+
+    def close(self):
+        subprocess.run(["docker", "rm", "-f", self.name], capture_output=True)
+
+
+@pytest.fixture
+def beets_flask(tmp_path):
+    server = BeetsFlask(tmp_path)
     yield server
     server.close()

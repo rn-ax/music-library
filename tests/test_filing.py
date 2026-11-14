@@ -1,4 +1,4 @@
-from conftest import ac, docker
+from conftest import PREVIEWED, ac, docker
 
 AC_ALBUM = dict(artist="Artist One", album_artist="Artist One", album="Solo Album", date="2020", disc="1/1")
 
@@ -108,3 +108,16 @@ def test_beet_update_reads_a_tag_changed_directly_in_a_file(library):
     library.beet("update")
 
     assert library.beet("ls", "-f", "$title").strip() == "Changed Title"
+
+
+@ac(35)
+def test_every_folder_in_the_inbox_appears_for_review_within_a_minute(beets_flask):
+    beets_flask.add_album("abc123", "First Song")
+    beets_flask.add_album("def456", "Second Song")
+    expected = {"/inbox/abc123", "/inbox/def456"}
+
+    beets_flask.wait(
+        lambda: expected <= beets_flask.folders() and all(beets_flask.statuses().get(path) == PREVIEWED for path in expected),
+        "both folders to be previewed for review",
+        timeout=60,
+    )
