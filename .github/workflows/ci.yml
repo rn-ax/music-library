@@ -1,12 +1,17 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches: ['**']
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# Branches cancel their stale run. Every run on main gets its own group, so a merge never cancels a deploy in flight.
+concurrency:
+  group: ci-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -37,10 +42,25 @@ jobs:
 
       - run: mise run test
 
+  # No human reviews pull requests: a branch whose checks passed is merged here.
+  merge:
+    needs: check
+    if: github.ref != 'refs/heads/main'
+    runs-on: [self-hosted, contabo]
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    steps:
+      - uses: rn-ax/poppycock/.github/actions/merge-pr@main
+
   publish:
     needs: check
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, contabo]
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     permissions:
       contents: read
       packages: write
@@ -86,3 +106,27 @@ jobs:
           tags: |
             ghcr.io/rn-ax/music-library-beets-flask:latest
             ghcr.io/rn-ax/music-library-beets-flask:${{ steps.version.outputs.version }}
+
+  deploy:
+    needs: publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, contabo]
+    timeout-minutes: 30
+    env:
+      TRUENAS_URL: ${{ vars.TRUENAS_URL }}
+      TRUENAS_USERNAME: ${{ vars.TRUENAS_USERNAME }}
+      TRUENAS_API_KEY: ${{ secrets.TRUENAS_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: latest
+        uses: rn-ax/poppycock/.github/actions/is-latest-main@main
+
+      - if: steps.latest.outputs.current == 'true'
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        with:
+          install: true
+          cache: false
+
+      - if: steps.latest.outputs.current == 'true'
+        run: uv run scripts/deploy.py "${{ needs.publish.outputs.version }}"
