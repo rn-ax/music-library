@@ -1,6 +1,6 @@
 # beets-flask
 
-- The image is the upstream release with polars' compatibility runtime swapped in (`Dockerfile` here), because the TrueNAS host's CPU has no AVX and polars' default runtime crashes on it. The Dockerfile follows the upstream release it starts from.
+- The image is the upstream release with polars' compatibility runtime swapped in (`Dockerfile` here), because the TrueNAS host's CPU has no AVX and polars' default runtime crashes on it. The Dockerfile follows the upstream release it starts from. Renovate versions the upstream image as semver, because its default Docker versioning treats a release-candidate suffix as a separate flavor and never proposes a newer release candidate or the final release.
 - The upstream image bundles its own beets and keeps its own database, separate from the `music` service's.
 - It reads `beets/config.yaml` and `beets-flask/config.yaml` from its `/config` volume. The container generates defaults when they are missing, and a restart applies a change. The files in this directory are the seeds, copied into place before the first start.
 - Its config schema accepts only `import.copy: yes` with `import.move: no`.
