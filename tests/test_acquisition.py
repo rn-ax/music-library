@@ -57,3 +57,14 @@ def test_m4a_audio_and_its_info_json_land_in_a_folder_named_after_the_items_id(m
     metube.wait(metube.idle, "MeTube to finish")
 
     assert metube.files() == ["clip/clip.info.json", "clip/clip.m4a"]
+
+
+@ac(6)
+def test_the_audio_codec_of_a_download_is_aac_when_the_source_stream_is_aac(metube):
+    url = metube.make_video("clip.mp4")
+
+    metube.add(url)
+    metube.wait(lambda: metube.downloaded(), "a download to finish")
+
+    [downloaded] = metube.downloaded()
+    assert metube.codec(downloaded) == "aac"
