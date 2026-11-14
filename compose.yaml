@@ -14,7 +14,7 @@ services:
       STATE_DIR: /state
       TEMP_DIR: /state/tmp
       OUTPUT_TEMPLATE: "%(id)s/%(title)s.%(ext)s"
-      YTDL_OPTIONS: '{"writeinfojson": true, "download_archive": "/state/archive.txt"}'
+      YTDL_OPTIONS: '{"writeinfojson": true, "download_archive": "/state/archive.txt", "format": "bestaudio[ext=m4a]/bestaudio/best", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "m4a"}]}'
     volumes:
       - /mnt/Storage/Downloads/metube:/downloads
       - /mnt/Storage/Configuration/music-library/metube:/state
