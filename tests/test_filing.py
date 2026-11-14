@@ -1,4 +1,4 @@
-from conftest import PREVIEWED, ac, docker
+from conftest import PREVIEW_FINISHED, ac, docker
 
 AC_ALBUM = dict(artist="Artist One", album_artist="Artist One", album="Solo Album", date="2020", disc="1/1")
 
@@ -117,7 +117,7 @@ def test_every_folder_in_the_inbox_appears_for_review_within_a_minute(beets_flas
     expected = {"/inbox/abc123", "/inbox/def456"}
 
     beets_flask.wait(
-        lambda: expected <= beets_flask.folders() and all(beets_flask.statuses().get(path) == PREVIEWED for path in expected),
-        "both folders to be previewed for review",
+        lambda: expected <= beets_flask.folders() and all(beets_flask.statuses().get(path) in PREVIEW_FINISHED for path in expected),
+        "both folders to be listed with a finished preview",
         timeout=60,
     )

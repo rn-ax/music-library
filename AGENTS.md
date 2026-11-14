@@ -33,4 +33,5 @@ A self-hosted music library pipeline feeding Plex. The rules it keeps are the ac
 - A run on `main` publishes both images and then deploys, and the deploy runs only when the run's commit is still the head of `main`.
 - Each job writes its Docker config to its own temp directory, because a stale registry login in a runner's shared config makes even a public `ghcr.io` pull fail.
 - Every `uses:` reference to a third party is pinned to a full commit SHA with a trailing comment naming the tag, and Renovate keeps the pins current. References to `rn-ax/poppycock` actions follow `main`.
+- Tests that run beets-flask point MusicBrainz at a local stub (`tests/musicbrainz_stub.py`), because a preview waits on MusicBrainz and not every CI host reaches it. Without the stub, a preview on such a host stays in progress for about 100 seconds and then fails.
 - Org-level secrets do not reach private repositories on the org's plan, so a credential CI needs is a repository secret.
