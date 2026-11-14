@@ -8,7 +8,8 @@
       "matchPackageNames": [
         "pspitzner/beets-flask"
       ],
-      "versioning": "semver"
+      "versioning": "semver",
+      "allowedVersions": "!/-(alpha|beta|rc|dev|pre)/"
     }
   ]
 }
