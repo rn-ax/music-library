@@ -32,6 +32,9 @@ jobs:
       - name: Build image
         run: docker build --platform linux/amd64 --tag music-library:ci .
 
+      - name: Build beets-flask image
+        run: docker build --platform linux/amd64 --tag music-library-beets-flask:ci beets-flask
+
       - run: mise run test
 
   publish:
@@ -74,3 +77,12 @@ jobs:
           tags: |
             ghcr.io/rn-ax/music-library:latest
             ghcr.io/rn-ax/music-library:${{ steps.version.outputs.version }}
+
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: beets-flask
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/rn-ax/music-library-beets-flask:latest
+            ghcr.io/rn-ax/music-library-beets-flask:${{ steps.version.outputs.version }}
