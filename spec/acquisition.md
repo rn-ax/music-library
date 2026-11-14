@@ -27,3 +27,4 @@ The inbox is the `metube` directory of the Downloads share.
 - AC-8: Submitting a video that was already downloaded creates no new file in the inbox.
 - AC-9: MeTube mounts only the inbox and its own state directory.
 - AC-31: A download submitted in MeTube without choosing a format is `m4a` audio.
+- AC-32: A download uses the highest-bitrate AAC stream the source offers.

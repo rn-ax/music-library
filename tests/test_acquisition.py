@@ -18,3 +18,15 @@ def test_a_download_submitted_without_a_format_is_m4a_audio(metube):
 
     assert metube.downloaded() == ["clip/clip.m4a"]
     assert metube.stream_types("clip/clip.m4a") == ["audio"]
+
+
+@ac(32)
+def test_a_download_uses_the_highest_bitrate_aac_stream_the_source_offers(metube):
+    url = metube.make_dash_audio(bitrates=(64, 192, 128))
+
+    metube.add(url)
+    metube.wait(lambda: metube.downloaded(), "a download to finish")
+
+    [downloaded] = metube.downloaded()
+    assert downloaded.endswith(".m4a")
+    assert metube.bitrate(downloaded) > 160_000
