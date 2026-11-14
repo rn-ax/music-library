@@ -174,6 +174,9 @@ class MeTube:
         data = json.loads(history)
         return not data.get("queue") and not data.get("pending")
 
+    def files(self) -> list[str]:
+        return sorted(str(p.relative_to(self.inbox)) for p in self.inbox.rglob("*") if p.is_file() and ".part" not in p.name)
+
     def downloaded(self) -> list[str]:
         return sorted(str(p.relative_to(self.inbox)) for p in self.inbox.rglob("*") if p.is_file() and not p.name.endswith(".json") and ".part" not in p.name)
 

@@ -46,3 +46,14 @@ def test_audio_that_was_already_downloaded_is_not_downloaded_again(metube):
     metube.wait(metube.idle, "MeTube to finish with the second submission")
 
     assert metube.downloaded() == []
+
+
+@ac(34)
+def test_m4a_audio_and_its_info_json_land_in_a_folder_named_after_the_items_id(metube):
+    url = metube.make_video("clip.mp4")
+
+    metube.add(url, download_type="audio", codec="auto", format="m4a", quality="best")
+    metube.wait(lambda: metube.downloaded(), "a download to finish")
+    metube.wait(metube.idle, "MeTube to finish")
+
+    assert metube.files() == ["clip/clip.info.json", "clip/clip.m4a"]
