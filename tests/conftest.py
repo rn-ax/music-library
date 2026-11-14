@@ -215,23 +215,39 @@ def metube(tmp_path, compose):
     server.close()
 
 
-PREVIEWED = 3  # beets-flask's FolderStatus: candidates fetched, waiting for a person
+# beets-flask's FolderStatus values at which a preview has finished and a person can act on the folder: PREVIEWED (3) has
+# candidates, FAILED (-1) found none, which is the usual outcome for covers, live versions and remixes.
+PREVIEW_FINISHED = {3, -1}
 
 
 class BeetsFlask:
-    """The beets-flask service run with the repo's seed configuration against scratch directories."""
+    """The beets-flask service run with the repo's seed configuration against scratch directories.
+
+    MusicBrainz is replaced by a stub that finds nothing, because a preview waits on MusicBrainz and the CI hosts
+    do not all reach it; the plugin list and everything else is the seed's.
+    """
 
     def __init__(self, tmp_path: pathlib.Path):
         self.name = f"ac-{uuid.uuid4().hex[:8]}"
         self.config, self.music, self.inbox = tmp_path / "config", tmp_path / "music", tmp_path / "inbox"
         for directory in (self.config / "beets", self.config / "beets-flask", self.music, self.inbox):
             directory.mkdir(parents=True)
-        shutil.copy(ROOT / "beets-flask" / "beets.yaml", self.config / "beets" / "config.yaml")
+        (self.config / "beets" / "config.yaml").write_text(
+            (ROOT / "beets-flask" / "beets.yaml").read_text() + f"\nmusicbrainz:\n  host: {self.name}-musicbrainz:8000\n  https: no\n  ratelimit: 1000\n"
+        )
         shutil.copy(ROOT / "beets-flask" / "config.yaml", self.config / "beets-flask" / "config.yaml")
         self.inbox_mounts = [(self.inbox, "/inbox")]
+        subprocess.run(["docker", "network", "create", self.name], capture_output=True, text=True, check=True)
         subprocess.run(
             [
-                "docker", "run", "-d", "--rm", "--name", self.name, "--platform", "linux/amd64", "-p", "127.0.0.1::5001",
+                "docker", "run", "-d", "--rm", "--name", f"{self.name}-musicbrainz", "--network", self.name, "--platform", "linux/amd64",
+                "-v", f"{ROOT / 'tests' / 'musicbrainz_stub.py'}:/stub.py:ro", "--entrypoint", "python", IMAGE, "/stub.py",
+            ],
+            capture_output=True, text=True, check=True,
+        )
+        subprocess.run(
+            [
+                "docker", "run", "-d", "--rm", "--name", self.name, "--network", self.name, "--platform", "linux/amd64", "-p", "127.0.0.1::5001",
                 "-e", "TZ=UTC", "-e", f"USER_ID={os.getuid()}", "-e", f"GROUP_ID={os.getgid()}",
                 "-v", f"{self.config}:/config", "-v", f"{self.music}:/music", "-v", f"{self.inbox}:/inbox", BEETS_FLASK_IMAGE,
             ],
@@ -276,7 +292,9 @@ class BeetsFlask:
         return {} if body is None else {item["path"]: item["status"] for item in json.loads(body)}
 
     def close(self):
-        subprocess.run(["docker", "rm", "-f", self.name], capture_output=True)
+        for name in (self.name, f"{self.name}-musicbrainz"):
+            subprocess.run(["docker", "rm", "-f", name], capture_output=True)
+        subprocess.run(["docker", "network", "rm", self.name], capture_output=True)
 
 
 @pytest.fixture
