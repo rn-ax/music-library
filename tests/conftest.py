@@ -143,6 +143,18 @@ class MeTube:
         )
         return f"http://{self.name}-media:8000/{name}"
 
+    def make_clip(self, name: str, kbps: int):
+        """A six second clip with a picture and an AAC soundtrack at a constant bitrate, served by the local media server."""
+        docker(
+            "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=duration=6:size=64x64:rate=5", "-f", "lavfi", "-i", "anoisesrc=duration=6:color=pink:sample_rate=44100",
+            "-c:v", "libx264", "-c:a", "aac", "-b:a", f"{kbps}k", "-shortest", f"/srv/{name}", mounts=[(self.media, "/srv")], entrypoint="ffmpeg",
+        )
+        return f"http://{self.name}-media:8000/{name}"
+
+    def source_bitrate(self, name: str) -> int:
+        out = docker("-v", "error", "-select_streams", "a:0", "-show_entries", "stream=bit_rate", "-of", "csv=p=0", f"/srv/{name}", mounts=[(self.media, "/srv")], entrypoint="ffprobe")
+        return int(out.strip())
+
     def make_dash_audio(self, bitrates=(64, 192, 128)):
         """A DASH manifest with one AAC audio stream per bitrate (kbit/s), served by the local media server."""
         streams = [arg for _ in bitrates for arg in ("-map", "0:a")]

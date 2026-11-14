@@ -68,3 +68,14 @@ def test_the_audio_codec_of_a_download_is_aac_when_the_source_stream_is_aac(metu
 
     [downloaded] = metube.downloaded()
     assert metube.codec(downloaded) == "aac"
+
+
+@ac(7)
+def test_the_bitrate_of_a_downloaded_aac_file_equals_the_bitrate_of_its_source(metube):
+    url = metube.make_clip("clip.mp4", kbps=192)
+
+    metube.add(url)
+    metube.wait(lambda: metube.downloaded(), "a download to finish")
+
+    [downloaded] = metube.downloaded()
+    assert metube.bitrate(downloaded) == metube.source_bitrate("clip.mp4")
