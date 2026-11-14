@@ -155,6 +155,10 @@ class MeTube:
         )
         return f"http://{self.name}-media:8000/dash/manifest.mpd"
 
+    def codec(self, path: str) -> str:
+        out = docker("-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "csv=p=0", f"/inbox/{path}", mounts=[(self.inbox, "/inbox")], entrypoint="ffprobe")
+        return out.strip()
+
     def bitrate(self, path: str) -> int:
         out = docker("-v", "error", "-select_streams", "a:0", "-show_entries", "stream=bit_rate", "-of", "csv=p=0", f"/inbox/{path}", mounts=[(self.inbox, "/inbox")], entrypoint="ffprobe")
         return int(out.strip())
