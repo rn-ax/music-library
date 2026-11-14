@@ -143,6 +143,22 @@ class MeTube:
         )
         return f"http://{self.name}-media:8000/{name}"
 
+    def make_dash_audio(self, bitrates=(64, 192, 128)):
+        """A DASH manifest with one AAC audio stream per bitrate (kbit/s), served by the local media server."""
+        streams = [arg for _ in bitrates for arg in ("-map", "0:a")]
+        rates = [arg for index, kbps in enumerate(bitrates) for arg in (f"-b:a:{index}", f"{kbps}k")]
+        (self.media / "dash").mkdir()
+        docker(
+            "-v", "error", "-y", "-f", "lavfi", "-i", "anoisesrc=duration=6:color=pink:sample_rate=44100", *streams, "-c:a", "aac", *rates,
+            "-f", "dash", "-seg_duration", "2", "-use_timeline", "1", "-use_template", "1", "/srv/dash/manifest.mpd",
+            mounts=[(self.media, "/srv")], entrypoint="ffmpeg",
+        )
+        return f"http://{self.name}-media:8000/dash/manifest.mpd"
+
+    def bitrate(self, path: str) -> int:
+        out = docker("-v", "error", "-select_streams", "a:0", "-show_entries", "stream=bit_rate", "-of", "csv=p=0", f"/inbox/{path}", mounts=[(self.inbox, "/inbox")], entrypoint="ffprobe")
+        return int(out.strip())
+
     def add(self, url: str, **options):
         request = urllib.request.Request(
             f"http://127.0.0.1:{self.port}/add", data=json.dumps({"url": url, **options}).encode(),
