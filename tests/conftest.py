@@ -90,6 +90,28 @@ def compose():
     return json.loads(out)
 
 
+# A yt-dlp extractor for http://<media server>/fake/<id> that reports what a real site reports: a title, an uploader, a date and
+# a media URL. Sites such as YouTube supply an uploader, plain media files do not.
+FAKE_EXTRACTOR = """
+from yt_dlp.extractor.common import InfoExtractor
+
+
+class FakeIE(InfoExtractor):
+    _VALID_URL = r'http://MEDIA_HOST:8000/fake/(?P<id>[a-z]+)'
+
+    def _real_extract(self, url):
+        return {
+            'id': self._match_id(url),
+            'title': 'Fake Title',
+            'uploader': 'Fake Uploader',
+            'upload_date': '20200102',
+            'url': 'http://MEDIA_HOST:8000/clip.mp4',
+            'ext': 'mp4',
+            'webpage_url': url,
+        }
+"""
+
+
 class MeTube:
     """The metube service from compose.yaml, run against scratch directories and a local media server."""
 
@@ -101,6 +123,9 @@ class MeTube:
         for directory in (self.inbox, self.state, self.media):
             directory.mkdir()
         user = f"{os.getuid()}:{os.getgid()}"
+        plugin = tmp_path / "plugin" / "yt_dlp_plugins" / "extractor"
+        plugin.mkdir(parents=True)
+        (plugin / "fake.py").write_text(FAKE_EXTRACTOR.replace("MEDIA_HOST", f"{self.name}-media"))
         self.run("docker", "network", "create", self.name)
         self.run(
             "docker", "run", "-d", "--rm", "--name", f"{self.name}-media", "--network", self.name, "--platform", "linux/amd64",
@@ -110,6 +135,7 @@ class MeTube:
         self.run(
             "docker", "run", "-d", "--rm", "--name", f"{self.name}-metube", "--network", self.name, "--platform", "linux/amd64",
             "-p", "127.0.0.1::8081", "-v", f"{self.inbox}:/downloads", "-v", f"{self.state}:/state",
+            "-v", f"{tmp_path / 'plugin'}:/etc/yt-dlp/plugins/test:ro",
             *[arg for key, value in environment.items() for arg in ("-e", f"{key}={value}")], service["image"],
         )
         self.port = self.run("docker", "port", f"{self.name}-metube", "8081/tcp").split(":")[-1].strip()
@@ -168,6 +194,10 @@ class MeTube:
             mounts=[(self.media, "/srv")], entrypoint="ffmpeg",
         )
         return f"http://{self.name}-media:8000/dash/manifest.mpd"
+
+    def tags(self, path: str) -> dict[str, str]:
+        out = docker("-v", "error", "-show_entries", "format_tags", "-of", "json", f"/inbox/{path}", mounts=[(self.inbox, "/inbox")], entrypoint="ffprobe")
+        return {key.lower(): value for key, value in json.loads(out)["format"].get("tags", {}).items()}
 
     def codec(self, path: str) -> str:
         out = docker("-v", "error", "-select_streams", "a:0", "-show_entries", "stream=codec_name", "-of", "csv=p=0", f"/inbox/{path}", mounts=[(self.inbox, "/inbox")], entrypoint="ffprobe")
