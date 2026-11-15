@@ -16,3 +16,4 @@ Lossless sources become ALAC and other formats become AAC, so the library holds 
 # Criteria
 
 - AC-36: Running the filing script moves each finished file in the staging folder into the library at `<artist>/<title>.m4a`, converted to ALAC or AAC first when its format is neither.
+- AC-37: A file that finishes in the staging folder is in the library within two minutes, without anyone starting the filing script.

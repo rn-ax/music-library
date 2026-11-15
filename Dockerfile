@@ -1,7 +1,7 @@
 FROM python:3.14-slim
 COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /usr/local/bin/uv
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y ffmpeg libchromaprint-tools \
+    && apt-get install --no-install-recommends -y ffmpeg inotify-tools libchromaprint-tools \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pyproject.toml uv.lock ./

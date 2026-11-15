@@ -1,6 +1,11 @@
+import os
+import subprocess
+import time
+import uuid
+
 import pytest
 
-from conftest import ac, docker
+from conftest import IMAGE, ac, docker
 
 
 class Filer:
@@ -68,3 +73,58 @@ def test_an_mp3_file_is_converted_to_aac_and_moved_into_the_library(filer):
     assert filer.files(filer.library) == ["Lossy Artist/Lossy Song.m4a"]
     assert filer.files(filer.staging) == []
     assert filer.probe("Lossy Artist/Lossy Song.m4a", "stream=codec_name") == "aac"
+
+
+class Watcher:
+    """The watcher service run in the music image against scratch staging and library folders."""
+
+    def __init__(self, filer: Filer):
+        self.filer = filer
+        self.name = f"ac-{uuid.uuid4().hex[:8]}"
+        subprocess.run(
+            [
+                "docker", "run", "-d", "--rm", "--name", self.name, "--platform", "linux/amd64", "--user", f"{os.getuid()}:{os.getgid()}",
+                "-v", f"{filer.staging}:/staging", "-v", f"{filer.library}:/library", "--entrypoint", "python", IMAGE,
+                "-m", "music_library.watch", "--staging", "/staging", "--library", "/library",
+            ],
+            capture_output=True, text=True, check=True,
+        )
+
+    def running(self) -> bool:
+        out = subprocess.run(["docker", "inspect", "-f", "{{.State.Running}}", self.name], capture_output=True, text=True)
+        return out.stdout.strip() == "true"
+
+    def logs(self) -> str:
+        out = subprocess.run(["docker", "logs", self.name], capture_output=True, text=True)
+        return out.stdout + out.stderr
+
+    def wait_for(self, condition, what: str, timeout: float):
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if condition():
+                return
+            if not self.running():
+                raise AssertionError(f"the watcher stopped while waiting for {what}\n{self.logs()}")
+            time.sleep(2)
+        raise AssertionError(f"timed out waiting for {what}\n{self.logs()}")
+
+    def close(self):
+        subprocess.run(["docker", "rm", "-f", self.name], capture_output=True)
+
+
+@pytest.fixture
+def watcher(filer):
+    server = Watcher(filer)
+    yield server
+    server.close()
+
+
+@ac(37)
+def test_a_file_that_finishes_in_staging_reaches_the_library_without_anyone_starting_the_script(filer, watcher):
+    watcher.wait_for(watcher.running, "the watcher to start", timeout=30)
+    time.sleep(5)  # let it finish its first pass, so the file below arrives while it is only watching
+
+    filer.make("Watched Artist/download.m4a", "aac", artist="Watched Artist", title="Watched Song")
+
+    watcher.wait_for(lambda: filer.files(filer.library) == ["Watched Artist/Watched Song.m4a"], "the file to reach the library", timeout=120)
+    assert filer.files(filer.staging) == []

@@ -53,11 +53,14 @@ def target_codec(path: pathlib.Path) -> str | None:
     return "alac" if path.suffix.lower() in LOSSLESS else "aac"
 
 
-def is_waiting(path: pathlib.Path, settle: float) -> bool:
+def is_candidate(path: pathlib.Path) -> bool:
+    """An audio file that is not hidden and not a partial download."""
     if not path.is_file() or path.suffix.lower() not in AUDIO:
         return False
-    if any(part.startswith(".") for part in path.parts) or path.name.endswith((".part", ".ytdl")):
-        return False
+    return not (any(part.startswith(".") for part in path.parts) or path.name.endswith((".part", ".ytdl")))
+
+
+def is_settled(path: pathlib.Path, settle: float) -> bool:
     return time.time() - path.stat().st_mtime >= settle
 
 
@@ -101,8 +104,11 @@ def file_one(path: pathlib.Path, staging: pathlib.Path, library: pathlib.Path) -
 
 
 def run(staging: pathlib.Path, library: pathlib.Path, settle: float) -> dict:
-    report = {"filed": [], "converted": [], "kept": [], "failed": []}
-    for path in sorted(p for p in staging.rglob("*") if is_waiting(p, settle)):
+    report = {"filed": [], "converted": [], "kept": [], "failed": [], "waiting": []}
+    for path in sorted(p for p in staging.rglob("*") if is_candidate(p)):
+        if not is_settled(path, settle):
+            report["waiting"].append(str(path.relative_to(staging)))
+            continue
         try:
             report[file_one(path, staging, library)].append(str(path.relative_to(staging)))
         except Exception as e:
