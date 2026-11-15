@@ -28,3 +28,4 @@ The inbox is the `metube` directory of the Downloads share.
 - AC-32: A download uses the highest-bitrate AAC stream the source offers.
 - AC-33: Submitting a URL whose audio was already downloaded creates no new file in the inbox.
 - AC-34: A URL submitted to MeTube as m4a audio produces `<inbox>/<id>/<title>.m4a` and `<inbox>/<id>/<title>.info.json`, where `<id>` is the item's id at its source.
+- AC-38: A download's file carries its title, its uploader as the artist and its source URL as tags.

@@ -79,3 +79,18 @@ def test_the_bitrate_of_a_downloaded_aac_file_equals_the_bitrate_of_its_source(m
 
     [downloaded] = metube.downloaded()
     assert metube.bitrate(downloaded) == metube.source_bitrate("clip.mp4")
+
+
+@ac(38)
+def test_a_downloads_file_carries_its_title_uploader_and_source_url(metube):
+    metube.make_video("clip.mp4")
+    source = f"http://{metube.name}-media:8000/fake/song"
+
+    metube.add(source)
+    metube.wait(lambda: metube.downloaded(), "a download to finish")
+
+    [downloaded] = metube.downloaded()
+    tags = metube.tags(downloaded)
+    assert tags.get("title") == "Fake Title"
+    assert tags.get("artist") == "Fake Uploader"
+    assert source in tags.values()
